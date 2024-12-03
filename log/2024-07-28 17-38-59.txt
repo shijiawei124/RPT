@@ -1,0 +1,135 @@
+2024-07-28 17:39:23 [INFO]	
+------------Environment Information-------------
+platform: Windows-10-10.0.19045-SP0
+Python: 3.9.17 (main, Jul  5 2023, 20:47:11) [MSC v.1916 64 bit (AMD64)]
+Paddle compiled with cuda: True
+NVCC: Build cuda_11.7.r11.7/compiler.31442593_0
+cudnn: 8.6
+GPUs used: 1
+CUDA_VISIBLE_DEVICES: None
+GPU: ['GPU 0: NVIDIA GeForce']
+GCC: gcc (MinGW.org GCC Build-2) 9.2.0
+PaddlePaddle: 2.4.1
+OpenCV: 4.5.5
+------------------------------------------------
+2024-07-28 17:39:24 [INFO]	Loading pretrained model from https://bj.bcebos.com/paddleseg/dygraph/mix_vision_transformer_b2.tar.gz
+2024-07-28 17:39:24 [WARNING]	backbone.EAM.0.weight is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	backbone.EAM.0.bias is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	backbone.EAM.1.weight is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	backbone.EAM.1.bias is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	backbone.EAM.1._mean is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	backbone.EAM.1._variance is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	backbone.EAM.3.weight is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	backbone.EAM.3.bias is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	backbone.EAM.4.weight is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	backbone.EAM.4.bias is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	backbone.EAM.4._mean is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	backbone.EAM.4._variance is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	backbone.EAM.6.weight is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	backbone.EAM.6.bias is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	backbone.EAM.7.weight is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	backbone.EAM.7.bias is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	backbone.EAM.7._mean is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	backbone.EAM.7._variance is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	backbone.EAM.9.weight is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	backbone.EAM.9.bias is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	backbone.EAM.10.weight is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	backbone.EAM.10.bias is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	backbone.EAM.10._mean is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	backbone.EAM.10._variance is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	backbone.EAM.12.ca.fc1.weight is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	backbone.EAM.12.ca.fc2.weight is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	backbone.EAM.12.sa.conv.weight is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	linear_c5.proj.weight is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	linear_c5.proj.bias is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	linear_c4.proj.weight is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	linear_c4.proj.bias is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	linear_c3.proj.weight is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	linear_c3.proj.bias is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	linear_c2.proj.weight is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	linear_c2.proj.bias is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	linear_c1.proj.weight is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	linear_c1.proj.bias is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	linear_fuse._conv.weight is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	linear_fuse._batch_norm.weight is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	linear_fuse._batch_norm.bias is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	linear_fuse._batch_norm._mean is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	linear_fuse._batch_norm._variance is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	linear_pred.weight is not in pretrained model
+2024-07-28 17:39:24 [WARNING]	linear_pred.bias is not in pretrained model
+2024-07-28 17:39:24 [INFO]	There are 332/376 variables loaded into ESegFormer.
+2024-07-28 17:39:24 [INFO]	
+---------------Config Information---------------
+batch_size: 1
+iters: 40000
+loss:
+  coef:
+  - 1
+  types:
+  - coef:
+    - 1
+    - 1
+    losses:
+    - type: CrossEntropyLoss
+    - type: DiceLoss
+    type: MixedLoss
+lr_scheduler:
+  T_max: 40000
+  learning_rate: 0.0002
+  type: CosineAnnealingDecay
+model:
+  pretrained: https://bj.bcebos.com/paddleseg/dygraph/mix_vision_transformer_b2.tar.gz
+  type: ESegFormer_B2
+optimizer:
+  beta1: 0.9
+  beta2: 0.999
+  type: AdamW
+  weight_decay: 0.01
+test_config:
+  aug_eval: true
+  crop_size:
+  - 1024
+  - 1024
+  flip_horizontal: true
+  flip_vertical: true
+  is_slide: true
+  stride:
+  - 768
+  - 768
+train_dataset:
+  dataset_root: E:/data/train/rice_dataset
+  mode: train
+  transforms:
+  - max_scale_factor: 2.0
+    min_scale_factor: 0.5
+    scale_step_size: 0.25
+    type: ResizeStepScaling
+  - crop_size:
+    - 512
+    - 512
+    label_padding_value: 0
+    type: RandomPaddingCrop
+  - type: RandomHorizontalFlip
+  - prob: 0.1
+    type: RandomBlur
+  - brightness_range: 0.4
+    contrast_range: 0.4
+    saturation_range: 0.4
+    type: RandomDistort
+  - type: RandomNoise
+  - type: Normalize
+  type: RootSeg
+val_dataset:
+  dataset_root: E:/data/train/rice_dataset
+  mode: val
+  transforms:
+  - type: Normalize
+  type: RootSeg
+------------------------------------------------
+D:\software\work\Anaconda\envs\pyqt\lib\site-packages\paddle\nn\layer\norm.py:711: UserWarning: When training, we now always track global mean and variance.
+  warnings.warn(
+D:\software\work\Anaconda\envs\pyqt\lib\site-packages\paddle\fluid\dygraph\math_op_patch.py:275: UserWarning: The dtype of left and right variables are not the same, left dtype is paddle.float32, but right dtype is paddle.int64, the right dtype will convert to paddle.float32
+  warnings.warn(
+D:\software\work\Anaconda\envs\pyqt\lib\site-packages\paddle\fluid\dygraph\math_op_patch.py:275: UserWarning: The dtype of left and right variables are not the same, left dtype is paddle.float32, but right dtype is paddle.bool, the right dtype will convert to paddle.float32
+  warnings.warn(
+2024-07-28 17:39:28 [INFO]	epoch: 1, iter: 10/40000, loss: 0.8750, lr: 0.000200, batch_cost: 0.3199, reader_cost: 0.10426, ips: 3.1261 samples/sec | ETA 03:33:12

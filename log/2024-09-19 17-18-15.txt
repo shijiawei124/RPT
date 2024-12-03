@@ -1,0 +1,17 @@
+Traceback (most recent call last):
+  File "D:\file\RPT\main.py", line 794, in update_processing
+    img = self.autoinpainting(img.copy())
+  File "D:\file\RPT\main.py", line 431, in autoinpainting
+    roi.resize((y_max - y_min, x_max - x_min))
+  File "D:\file\RPT\main.py", line 431, in autoinpainting
+    roi.resize((y_max - y_min, x_max - x_min))
+  File "_pydevd_bundle\pydevd_cython_win32_39_64.pyx", line 1179, in _pydevd_bundle.pydevd_cython_win32_39_64.SafeCallWrapper.__call__
+  File "_pydevd_bundle\pydevd_cython_win32_39_64.pyx", line 620, in _pydevd_bundle.pydevd_cython_win32_39_64.PyDBFrame.trace_dispatch
+  File "_pydevd_bundle\pydevd_cython_win32_39_64.pyx", line 1095, in _pydevd_bundle.pydevd_cython_win32_39_64.PyDBFrame.trace_dispatch
+  File "_pydevd_bundle\pydevd_cython_win32_39_64.pyx", line 1057, in _pydevd_bundle.pydevd_cython_win32_39_64.PyDBFrame.trace_dispatch
+  File "_pydevd_bundle\pydevd_cython_win32_39_64.pyx", line 317, in _pydevd_bundle.pydevd_cython_win32_39_64.PyDBFrame.do_wait_suspend
+  File "D:\software\work\PyCharm 2022.3.2\plugins\python\helpers\pydev\pydevd.py", line 1160, in do_wait_suspend
+    self._do_wait_suspend(thread, frame, event, arg, suspend_type, from_this_thread)
+  File "D:\software\work\PyCharm 2022.3.2\plugins\python\helpers\pydev\pydevd.py", line 1175, in _do_wait_suspend
+    time.sleep(0.01)
+KeyboardInterrupt

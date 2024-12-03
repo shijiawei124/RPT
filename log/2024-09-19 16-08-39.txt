@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "D:\file\RPT\main.py", line 794, in update_processing
+    qimg = QImage(img.data, img.shape[1], img.shape[0], QImage.Format_Grayscale8)
+AttributeError: 'NoneType' object has no attribute 'data'

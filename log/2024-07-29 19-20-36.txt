@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "D:\file\RPT\main.py", line 425, in update_current_image
+    current_image = list(self.file_dict.keys())[0]
+IndexError: list index out of range

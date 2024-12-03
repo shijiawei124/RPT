@@ -1,0 +1,265 @@
+2024-07-29 17:04:19 [INFO]	
+------------Environment Information-------------
+platform: Windows-10-10.0.19045-SP0
+Python: 3.9.17 (main, Jul  5 2023, 20:47:11) [MSC v.1916 64 bit (AMD64)]
+Paddle compiled with cuda: True
+NVCC: Build cuda_11.7.r11.7/compiler.31442593_0
+cudnn: 8.6
+GPUs used: 1
+CUDA_VISIBLE_DEVICES: None
+GPU: ['GPU 0: NVIDIA GeForce']
+GCC: gcc (MinGW.org GCC Build-2) 9.2.0
+PaddlePaddle: 2.6.1
+OpenCV: 4.5.5
+------------------------------------------------
+2024-07-29 17:04:20 [INFO]	Loading pretrained model from https://bj.bcebos.com/paddleseg/dygraph/mix_vision_transformer_b0.tar.gz
+2024-07-29 17:04:20 [WARNING]	backbone.EAM.0.weight is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	backbone.EAM.0.bias is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	backbone.EAM.1.weight is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	backbone.EAM.1.bias is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	backbone.EAM.1._mean is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	backbone.EAM.1._variance is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	backbone.EAM.3.weight is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	backbone.EAM.3.bias is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	backbone.EAM.4.weight is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	backbone.EAM.4.bias is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	backbone.EAM.4._mean is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	backbone.EAM.4._variance is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	backbone.EAM.6.weight is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	backbone.EAM.6.bias is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	backbone.EAM.7.weight is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	backbone.EAM.7.bias is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	backbone.EAM.7._mean is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	backbone.EAM.7._variance is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	backbone.EAM.9.weight is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	backbone.EAM.9.bias is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	backbone.EAM.10.weight is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	backbone.EAM.10.bias is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	backbone.EAM.10._mean is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	backbone.EAM.10._variance is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	backbone.EAM.12.ca.fc1.weight is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	backbone.EAM.12.ca.fc2.weight is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	backbone.EAM.12.sa.conv.weight is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	linear_c5.proj.weight is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	linear_c5.proj.bias is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	linear_c4.proj.weight is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	linear_c4.proj.bias is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	linear_c3.proj.weight is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	linear_c3.proj.bias is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	linear_c2.proj.weight is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	linear_c2.proj.bias is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	linear_c1.proj.weight is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	linear_c1.proj.bias is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	linear_fuse._conv.weight is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	linear_fuse._batch_norm.weight is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	linear_fuse._batch_norm.bias is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	linear_fuse._batch_norm._mean is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	linear_fuse._batch_norm._variance is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	linear_pred.weight is not in pretrained model
+2024-07-29 17:04:20 [WARNING]	linear_pred.bias is not in pretrained model
+2024-07-29 17:04:20 [INFO]	There are 176/220 variables loaded into ESegFormer.
+2024-07-29 17:04:20 [INFO]	
+---------------Config Information---------------
+batch_size: 1
+iters: 40000
+loss:
+  coef:
+  - 1
+  types:
+  - coef:
+    - 1
+    - 1
+    losses:
+    - type: CrossEntropyLoss
+    - type: DiceLoss
+    type: MixedLoss
+lr_scheduler:
+  T_max: 40000
+  learning_rate: 0.0002
+  type: CosineAnnealingDecay
+model:
+  pretrained: https://bj.bcebos.com/paddleseg/dygraph/mix_vision_transformer_b0.tar.gz
+  type: ESegFormer_B0
+optimizer:
+  beta1: 0.9
+  beta2: 0.999
+  type: AdamW
+  weight_decay: 0.01
+test_config:
+  aug_eval: true
+  crop_size:
+  - 1024
+  - 1024
+  flip_horizontal: true
+  flip_vertical: true
+  is_slide: true
+  stride:
+  - 768
+  - 768
+train_dataset:
+  dataset_root: E:/data/train/rice_dataset
+  mode: train
+  transforms:
+  - max_scale_factor: 2.0
+    min_scale_factor: 0.5
+    scale_step_size: 0.25
+    type: ResizeStepScaling
+  - crop_size:
+    - 512
+    - 512
+    label_padding_value: 0
+    type: RandomPaddingCrop
+  - type: RandomHorizontalFlip
+  - prob: 0.1
+    type: RandomBlur
+  - brightness_range: 0.4
+    contrast_range: 0.4
+    saturation_range: 0.4
+    type: RandomDistort
+  - type: RandomNoise
+  - type: Normalize
+  type: RootSeg
+val_dataset:
+  dataset_root: E:/data/train/rice_dataset
+  mode: val
+  transforms:
+  - type: Normalize
+  type: RootSeg
+------------------------------------------------
+D:\software\work\Anaconda\envs\RPT\lib\site-packages\paddle\nn\layer\norm.py:824: UserWarning: When training, we now always track global mean and variance.
+  warnings.warn(
+2024-07-29 17:05:43 [INFO]	
+------------Environment Information-------------
+platform: Windows-10-10.0.19045-SP0
+Python: 3.9.17 (main, Jul  5 2023, 20:47:11) [MSC v.1916 64 bit (AMD64)]
+Paddle compiled with cuda: True
+NVCC: Build cuda_11.7.r11.7/compiler.31442593_0
+cudnn: 8.6
+GPUs used: 1
+CUDA_VISIBLE_DEVICES: None
+GPU: ['GPU 0: NVIDIA GeForce']
+GCC: gcc (MinGW.org GCC Build-2) 9.2.0
+PaddlePaddle: 2.6.1
+OpenCV: 4.5.5
+------------------------------------------------
+2024-07-29 17:05:43 [INFO]	Loading pretrained model from https://bj.bcebos.com/paddleseg/dygraph/mix_vision_transformer_b0.tar.gz
+2024-07-29 17:05:43 [WARNING]	backbone.EAM.0.weight is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	backbone.EAM.0.bias is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	backbone.EAM.1.weight is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	backbone.EAM.1.bias is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	backbone.EAM.1._mean is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	backbone.EAM.1._variance is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	backbone.EAM.3.weight is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	backbone.EAM.3.bias is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	backbone.EAM.4.weight is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	backbone.EAM.4.bias is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	backbone.EAM.4._mean is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	backbone.EAM.4._variance is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	backbone.EAM.6.weight is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	backbone.EAM.6.bias is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	backbone.EAM.7.weight is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	backbone.EAM.7.bias is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	backbone.EAM.7._mean is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	backbone.EAM.7._variance is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	backbone.EAM.9.weight is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	backbone.EAM.9.bias is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	backbone.EAM.10.weight is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	backbone.EAM.10.bias is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	backbone.EAM.10._mean is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	backbone.EAM.10._variance is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	backbone.EAM.12.ca.fc1.weight is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	backbone.EAM.12.ca.fc2.weight is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	backbone.EAM.12.sa.conv.weight is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	linear_c5.proj.weight is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	linear_c5.proj.bias is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	linear_c4.proj.weight is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	linear_c4.proj.bias is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	linear_c3.proj.weight is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	linear_c3.proj.bias is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	linear_c2.proj.weight is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	linear_c2.proj.bias is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	linear_c1.proj.weight is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	linear_c1.proj.bias is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	linear_fuse._conv.weight is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	linear_fuse._batch_norm.weight is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	linear_fuse._batch_norm.bias is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	linear_fuse._batch_norm._mean is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	linear_fuse._batch_norm._variance is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	linear_pred.weight is not in pretrained model
+2024-07-29 17:05:43 [WARNING]	linear_pred.bias is not in pretrained model
+2024-07-29 17:05:43 [INFO]	There are 176/220 variables loaded into ESegFormer.
+2024-07-29 17:05:43 [INFO]	
+---------------Config Information---------------
+batch_size: 1
+iters: 40000
+loss:
+  coef:
+  - 1
+  types:
+  - coef:
+    - 1
+    - 1
+    losses:
+    - type: CrossEntropyLoss
+    - type: DiceLoss
+    type: MixedLoss
+lr_scheduler:
+  T_max: 40000
+  learning_rate: 0.0002
+  type: CosineAnnealingDecay
+model:
+  pretrained: https://bj.bcebos.com/paddleseg/dygraph/mix_vision_transformer_b0.tar.gz
+  type: ESegFormer_B0
+optimizer:
+  beta1: 0.9
+  beta2: 0.999
+  type: AdamW
+  weight_decay: 0.01
+test_config:
+  aug_eval: true
+  crop_size:
+  - 1024
+  - 1024
+  flip_horizontal: true
+  flip_vertical: true
+  is_slide: true
+  stride:
+  - 768
+  - 768
+train_dataset:
+  dataset_root: E:/data/train/rice_dataset
+  mode: train
+  transforms:
+  - max_scale_factor: 2.0
+    min_scale_factor: 0.5
+    scale_step_size: 0.25
+    type: ResizeStepScaling
+  - crop_size:
+    - 512
+    - 512
+    label_padding_value: 0
+    type: RandomPaddingCrop
+  - type: RandomHorizontalFlip
+  - prob: 0.1
+    type: RandomBlur
+  - brightness_range: 0.4
+    contrast_range: 0.4
+    saturation_range: 0.4
+    type: RandomDistort
+  - type: RandomNoise
+  - type: Normalize
+  type: RootSeg
+val_dataset:
+  dataset_root: E:/data/train/rice_dataset
+  mode: val
+  transforms:
+  - type: Normalize
+  type: RootSeg
+------------------------------------------------
+2024-07-29 17:05:47 [INFO]	epoch: 1, iter: 10/40000, loss: 1.3890, lr: 0.000200, batch_cost: 0.3802, reader_cost: 0.26973, ips: 2.6301 samples/sec | ETA 04:13:24
+2024-07-29 17:05:51 [INFO]	epoch: 2, iter: 20/40000, loss: 0.9781, lr: 0.000200, batch_cost: 0.4251, reader_cost: 0.31668, ips: 2.3527 samples/sec | ETA 04:43:13
+2024-07-29 17:05:55 [INFO]	epoch: 2, iter: 30/40000, loss: 0.8025, lr: 0.000200, batch_cost: 0.3235, reader_cost: 0.23435, ips: 3.0910 samples/sec | ETA 03:35:31
+2024-07-29 17:05:58 [INFO]	epoch: 3, iter: 40/40000, loss: 0.7087, lr: 0.000200, batch_cost: 0.3204, reader_cost: 0.21566, ips: 3.1214 samples/sec | ETA 03:33:21
+2024-07-29 17:06:01 [INFO]	epoch: 3, iter: 50/40000, loss: 0.6413, lr: 0.000200, batch_cost: 0.3053, reader_cost: 0.20962, ips: 3.2756 samples/sec | ETA 03:23:16
+2024-07-29 17:06:04 [INFO]	epoch: 4, iter: 60/40000, loss: 0.6476, lr: 0.000200, batch_cost: 0.3246, reader_cost: 0.23219, ips: 3.0804 samples/sec | ETA 03:36:05
+2024-07-29 17:06:07 [INFO]	epoch: 4, iter: 70/40000, loss: 0.6412, lr: 0.000200, batch_cost: 0.3337, reader_cost: 0.23387, ips: 2.9966 samples/sec | ETA 03:42:04

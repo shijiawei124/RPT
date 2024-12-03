@@ -1,0 +1,61 @@
+2024-07-29 14:08:17 [INFO]	Number of predict images = 1
+2024-07-29 14:08:17 [INFO]	Loading pretrained model from E:/data/model_weight/Esegformerb2/best_model/model.pdparams
+2024-07-29 14:08:19 [WARNING]	backbone.EAM.0.weight is not in pretrained model
+2024-07-29 14:08:19 [WARNING]	backbone.EAM.0.bias is not in pretrained model
+2024-07-29 14:08:19 [WARNING]	backbone.EAM.1.weight is not in pretrained model
+2024-07-29 14:08:19 [WARNING]	backbone.EAM.1.bias is not in pretrained model
+2024-07-29 14:08:19 [WARNING]	backbone.EAM.1._mean is not in pretrained model
+2024-07-29 14:08:19 [WARNING]	backbone.EAM.1._variance is not in pretrained model
+2024-07-29 14:08:19 [WARNING]	backbone.EAM.3.weight is not in pretrained model
+2024-07-29 14:08:19 [WARNING]	backbone.EAM.3.bias is not in pretrained model
+2024-07-29 14:08:19 [WARNING]	backbone.EAM.4.weight is not in pretrained model
+2024-07-29 14:08:19 [WARNING]	backbone.EAM.4.bias is not in pretrained model
+2024-07-29 14:08:19 [WARNING]	backbone.EAM.4._mean is not in pretrained model
+2024-07-29 14:08:19 [WARNING]	backbone.EAM.4._variance is not in pretrained model
+2024-07-29 14:08:19 [WARNING]	backbone.EAM.6.weight is not in pretrained model
+2024-07-29 14:08:19 [WARNING]	backbone.EAM.6.bias is not in pretrained model
+2024-07-29 14:08:19 [WARNING]	backbone.EAM.7.weight is not in pretrained model
+2024-07-29 14:08:19 [WARNING]	backbone.EAM.7.bias is not in pretrained model
+2024-07-29 14:08:19 [WARNING]	backbone.EAM.7._mean is not in pretrained model
+2024-07-29 14:08:19 [WARNING]	backbone.EAM.7._variance is not in pretrained model
+2024-07-29 14:08:19 [WARNING]	backbone.EAM.9.weight is not in pretrained model
+2024-07-29 14:08:19 [WARNING]	backbone.EAM.9.bias is not in pretrained model
+2024-07-29 14:08:19 [WARNING]	backbone.EAM.10.weight is not in pretrained model
+2024-07-29 14:08:19 [WARNING]	backbone.EAM.10.bias is not in pretrained model
+2024-07-29 14:08:19 [WARNING]	backbone.EAM.10._mean is not in pretrained model
+2024-07-29 14:08:19 [WARNING]	backbone.EAM.10._variance is not in pretrained model
+2024-07-29 14:08:19 [WARNING]	backbone.EAM.12.ca.fc1.weight is not in pretrained model
+2024-07-29 14:08:19 [WARNING]	backbone.EAM.12.ca.fc2.weight is not in pretrained model
+2024-07-29 14:08:19 [WARNING]	backbone.EAM.12.sa.conv.weight is not in pretrained model
+2024-07-29 14:08:19 [INFO]	There are 349/376 variables loaded into ESegFormer.
+2024-07-29 14:08:19 [INFO]	Start to predict...
+1/1 [==============================] - 15s 15s/step
+start calculate thread
+start calculate traits
+processid:1/1
+end calculate thread
+start calculate thread
+start calculate traits
+processid:1/1
+end calculate thread
+start calculate thread
+start calculate traits
+processid:1/4
+processid:2/4
+processid:3/4
+processid:4/4
+end calculate thread
+2024-07-29 14:10:21 [INFO]	
+------------Environment Information-------------
+platform: Windows-10-10.0.19045-SP0
+Python: 3.9.17 (main, Jul  5 2023, 20:47:11) [MSC v.1916 64 bit (AMD64)]
+Paddle compiled with cuda: True
+NVCC: Build cuda_11.7.r11.7/compiler.31442593_0
+cudnn: 8.6
+GPUs used: 1
+CUDA_VISIBLE_DEVICES: None
+GPU: ['GPU 0: NVIDIA GeForce']
+GCC: gcc (MinGW.org GCC Build-2) 9.2.0
+PaddlePaddle: 2.6.1
+OpenCV: 4.5.5
+------------------------------------------------

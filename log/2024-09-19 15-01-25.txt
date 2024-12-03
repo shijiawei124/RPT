@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "D:\file\RPT\main.py", line 611, in update_threshold_segmentation
+    img[img <= threshold] = 0
+TypeError: '<=' not supported between instances of 'NoneType' and 'float'

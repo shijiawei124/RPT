@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "D:\file\RPT\main.py", line 792, in update_processing
+    img = self.autoinpainting(img)
+  File "D:\file\RPT\main.py", line 430, in autoinpainting
+    roi = roi.resize((y_max - y_min, x_max - x_min))
+ValueError: cannot resize this array: it does not own its data

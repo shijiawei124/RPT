@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "D:\file\RPT\main.py", line 423, in update_current_image
+    current_image = self.current_image['image_path']
+  File "D:\file\RPT\main.py", line 423, in update_current_image
+    current_image = self.current_image['image_path']
+  File "_pydevd_bundle\pydevd_cython_win32_39_64.pyx", line 1589, in _pydevd_bundle.pydevd_cython_win32_39_64.ThreadTracer.__call__
+  File "_pydevd_bundle\pydevd_cython_win32_39_64.pyx", line 929, in _pydevd_bundle.pydevd_cython_win32_39_64.PyDBFrame.trace_dispatch
+  File "_pydevd_bundle\pydevd_cython_win32_39_64.pyx", line 920, in _pydevd_bundle.pydevd_cython_win32_39_64.PyDBFrame.trace_dispatch
+  File "_pydevd_bundle\pydevd_cython_win32_39_64.pyx", line 317, in _pydevd_bundle.pydevd_cython_win32_39_64.PyDBFrame.do_wait_suspend
+  File "D:\software\work\PyCharm 2022.3.2\plugins\python\helpers\pydev\pydevd.py", line 1160, in do_wait_suspend
+    self._do_wait_suspend(thread, frame, event, arg, suspend_type, from_this_thread)
+  File "D:\software\work\PyCharm 2022.3.2\plugins\python\helpers\pydev\pydevd.py", line 1175, in _do_wait_suspend
+    time.sleep(0.01)
+KeyboardInterrupt

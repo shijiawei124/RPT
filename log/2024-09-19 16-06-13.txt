@@ -1,0 +1,6 @@
+D:\file\RPT\main.py:417: DeprecationWarning: Calling nonzero on 0d arrays is deprecated, as it behaves surprisingly. Use `atleast_1d(cond).nonzero()` if the old behavior was intended. If the context of this warning is of the form `arr[nonzero(cond)]`, just use `arr[cond]`.
+  arr = np.where(img == 255)
+Traceback (most recent call last):
+  File "D:\file\RPT\main.py", line 418, in autoinpainting
+    x_min, x_max = np.min(arr[1]), np.max(arr[1])
+IndexError: tuple index out of range

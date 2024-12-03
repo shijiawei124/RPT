@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "D:\file\RPT\main.py", line 794, in update_processing
+    img[labels == i] = 0
+  File "D:\file\RPT\main.py", line 436, in autoinpainting
+    output_mask = cv2.dilate(output, np.ones((3, 3), np.uint8), iterations=3)
+cv2.error: OpenCV(4.5.5) D:\a\opencv-python\opencv-python\opencv\modules\core\src\arithm.cpp:674: error: (-5:Bad argument) When the input arrays in add/subtract/multiply/divide functions have different types, the output array type must be explicitly specified in function 'cv::arithm_op'
+

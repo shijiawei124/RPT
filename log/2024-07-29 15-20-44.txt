@@ -1,0 +1,46 @@
+2024-07-29 15:39:15 [INFO]	Number of predict images = 1
+2024-07-29 15:39:15 [INFO]	Loading pretrained model from E:/data/model_weight/Esegformerb2/best_model/model.pdparams
+2024-07-29 15:39:15 [WARNING]	backbone.EAM.0.weight is not in pretrained model
+2024-07-29 15:39:15 [WARNING]	backbone.EAM.0.bias is not in pretrained model
+2024-07-29 15:39:15 [WARNING]	backbone.EAM.1.weight is not in pretrained model
+2024-07-29 15:39:15 [WARNING]	backbone.EAM.1.bias is not in pretrained model
+2024-07-29 15:39:15 [WARNING]	backbone.EAM.1._mean is not in pretrained model
+2024-07-29 15:39:15 [WARNING]	backbone.EAM.1._variance is not in pretrained model
+2024-07-29 15:39:15 [WARNING]	backbone.EAM.3.weight is not in pretrained model
+2024-07-29 15:39:15 [WARNING]	backbone.EAM.3.bias is not in pretrained model
+2024-07-29 15:39:15 [WARNING]	backbone.EAM.4.weight is not in pretrained model
+2024-07-29 15:39:15 [WARNING]	backbone.EAM.4.bias is not in pretrained model
+2024-07-29 15:39:15 [WARNING]	backbone.EAM.4._mean is not in pretrained model
+2024-07-29 15:39:15 [WARNING]	backbone.EAM.4._variance is not in pretrained model
+2024-07-29 15:39:15 [WARNING]	backbone.EAM.6.weight is not in pretrained model
+2024-07-29 15:39:15 [WARNING]	backbone.EAM.6.bias is not in pretrained model
+2024-07-29 15:39:15 [WARNING]	backbone.EAM.7.weight is not in pretrained model
+2024-07-29 15:39:15 [WARNING]	backbone.EAM.7.bias is not in pretrained model
+2024-07-29 15:39:15 [WARNING]	backbone.EAM.7._mean is not in pretrained model
+2024-07-29 15:39:15 [WARNING]	backbone.EAM.7._variance is not in pretrained model
+2024-07-29 15:39:15 [WARNING]	backbone.EAM.9.weight is not in pretrained model
+2024-07-29 15:39:15 [WARNING]	backbone.EAM.9.bias is not in pretrained model
+2024-07-29 15:39:15 [WARNING]	backbone.EAM.10.weight is not in pretrained model
+2024-07-29 15:39:15 [WARNING]	backbone.EAM.10.bias is not in pretrained model
+2024-07-29 15:39:15 [WARNING]	backbone.EAM.10._mean is not in pretrained model
+2024-07-29 15:39:15 [WARNING]	backbone.EAM.10._variance is not in pretrained model
+2024-07-29 15:39:15 [WARNING]	backbone.EAM.12.ca.fc1.weight is not in pretrained model
+2024-07-29 15:39:15 [WARNING]	backbone.EAM.12.ca.fc2.weight is not in pretrained model
+2024-07-29 15:39:15 [WARNING]	backbone.EAM.12.sa.conv.weight is not in pretrained model
+2024-07-29 15:39:15 [INFO]	There are 349/376 variables loaded into ESegFormer.
+2024-07-29 15:39:15 [INFO]	Start to predict...
+1/1 [==============================] - 14s 14s/step
+Traceback (most recent call last):
+  File "D:\file\RPT\main.py", line 933, in start_segmentation
+    args['image_rootpath'] = self.dataset_rootpath
+  File "D:\file\RPT\main.py", line 933, in start_segmentation
+    args['image_rootpath'] = self.dataset_rootpath
+  File "_pydevd_bundle\pydevd_cython_win32_39_64.pyx", line 1589, in _pydevd_bundle.pydevd_cython_win32_39_64.ThreadTracer.__call__
+  File "_pydevd_bundle\pydevd_cython_win32_39_64.pyx", line 929, in _pydevd_bundle.pydevd_cython_win32_39_64.PyDBFrame.trace_dispatch
+  File "_pydevd_bundle\pydevd_cython_win32_39_64.pyx", line 920, in _pydevd_bundle.pydevd_cython_win32_39_64.PyDBFrame.trace_dispatch
+  File "_pydevd_bundle\pydevd_cython_win32_39_64.pyx", line 317, in _pydevd_bundle.pydevd_cython_win32_39_64.PyDBFrame.do_wait_suspend
+  File "D:\software\work\PyCharm 2022.3.2\plugins\python\helpers\pydev\pydevd.py", line 1160, in do_wait_suspend
+    self._do_wait_suspend(thread, frame, event, arg, suspend_type, from_this_thread)
+  File "D:\software\work\PyCharm 2022.3.2\plugins\python\helpers\pydev\pydevd.py", line 1175, in _do_wait_suspend
+    time.sleep(0.01)
+KeyboardInterrupt
