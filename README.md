@@ -93,6 +93,7 @@ Supports custom training:
 ## Project Repository
 
 For detailed code and documentation, visit: [https://github.com/shijiawei124/RPT.git](https://github.com/shijiawei124/RPT.git)
+有啥问题直接邮箱问我呗 506437858@qq.com 我感觉还是有些bug，到时候我来修改下，对了我们训练了很多奇怪的权重，包括水培以及其他根盒背景的，有需要也可以问我
 
 ## Feedback
 
