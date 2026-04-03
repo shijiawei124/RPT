@@ -1,0 +1,11 @@
+opencv-python
+onnxruntime
+PyQt5
+PyQtChart
+pyyaml
+requests
+filelock
+scipy
+scikit-image
+visualdl
+qdarkstyle
