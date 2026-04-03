@@ -43,7 +43,20 @@ class myGraphicsView(QtWidgets.QGraphicsView):
         if isinstance(pixmap, QPixmap):
             self.pixmap = pixmap
         elif isinstance(pixmap, QImage):
-            self.pixmap = QPixmap.fromImage(pixmap)
+            # 检查QImage是否有效
+            if pixmap.isNull():
+                print("Error: Provided QImage is null or invalid.")
+                return
+
+            try:
+                # 尝试从QImage创建QPixmap
+                p_size = pixmap.size()
+                p_format = pixmap.format()
+                p_isNull = pixmap.isNull()
+                self.pixmap = QPixmap.fromImage(pixmap)
+            except Exception as e:
+                print(f"Error converting QImage to QPixmap: {e}")
+                return
         elif isinstance(pixmap, str) and os.path.isfile(pixmap):
             self.pixmap = QPixmap(pixmap)
         else:

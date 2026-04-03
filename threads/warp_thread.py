@@ -12,7 +12,6 @@ from skimage.morphology import skeletonize
 #     plt.imshow(img, cmap=cmap)
 #     plt.show()
 
-
 class WarpThread(QtCore.QThread):
     # [str, str, str]: image_path, binary_path, 'binary_path'
     # [bool]: switch of Stop button

@@ -8,7 +8,8 @@ import onnxruntime
 import paddle
 from PIL import Image
 from PyQt5 import QtWidgets
-from PyQt5.QtCore import Qt
+from PyQt5.QtChart import QChartView
+from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QImage, QIcon, QPixmap, QFont
 from PyQt5.QtWidgets import QMainWindow, QFileDialog, QTreeWidgetItem, QMessageBox
 from icon import icon_png
@@ -21,6 +22,11 @@ from threads.process_thread import ProcessThread
 from threads.train_thread import TrainThread
 from threads.warp_thread import WarpThread
 from ui.main_UI import MainWindow_UI
+import pickle
+
+import qdarkstyle
+import sys
+from PyQt5.QtWidgets import QApplication
 
 
 # paddle.set_flags({'FLAGS_verbosity': 0})
@@ -34,12 +40,45 @@ class MainWindow(QMainWindow, MainWindow_UI):
         self.setup(self)
         self.setuplogit()
         self.setupDefaultValue()
+        self.groupBox_Warp.setVisible(False)
         env_info = get_sys_env()
-        self.place = 'gpu' if env_info['Paddle compiled with cuda'] and env_info['GPUs used'] else 'cpu'
-        if self.place == 'cpu':
+
+        # 兼容不同 paddleseg/paddle 版本返回字段
+        gpu_count = int(env_info.get('GPUs used', 0) or 0)
+        cuda_compiled = bool(env_info.get('Paddle compiled with cuda', False))
+
+        self.place = 'gpu' if (cuda_compiled and gpu_count > 0) else 'cpu'
+
+        if self.place == 'gpu':
+            self.spinBox_GPU_id.setMinimum(0)
+            self.spinBox_GPU_id.setMaximum(gpu_count - 1)
+            self.spinBox_GPU_id.setValue(0)
+        else:
             self.update_textBrowser('Warning: CPU is used, which is slow and not recommended.')
             self.tab_Train.setEnabled(False)
+            self.spinBox_GPU_id.setEnabled(False)
+            self.spinBox_GPU_id.setMinimum(-1)
+            self.spinBox_GPU_id.setMaximum(-1)
+            self.spinBox_GPU_id.setValue(-1)
+
         paddle.set_device(self.place)
+
+        # 防抖计时器：延时图像处理
+        self.processing_timer = QTimer(self)
+        self.processing_timer.setSingleShot(True)
+        self.processing_timer.timeout.connect(self._do_update_processing)
+
+        # 将相关控件统一入口
+        param_widgets = [
+            self.spinBox_AreaThreshold,
+            self.spinBox_Dilation,
+            self.spinBox_rbo_Top,
+            self.spinBox_rbo_Bottom,
+            self.spinBox_rbo_Left,
+            self.spinBox_rbo_Right,
+        ]
+        for widget in param_widgets:
+            widget.valueChanged.connect(self.on_processing_param_changed)
 
     def setuplogit(self):
         self.file_dict = {}  # {'image_path': {'binary_path': None, 'processed_path': None, 'traits': None, 'visualization': None}
@@ -100,16 +139,9 @@ class MainWindow(QMainWindow, MainWindow_UI):
         self.comboBox_Method.currentTextChanged.connect(self.update_threshold_segmentation)
         self.doubleSpinBox_Threshold.valueChanged.connect(self.update_threshold_segmentation)
         self.treeWidget_ProcessingConfig.itemChanged.connect(self.update_treeWidget_ProcessingConfig)
-        self.treeWidget_ProcessingConfig.itemChanged.connect(self.update_processing)
-        self.spinBox_Dilation.valueChanged.connect(self.update_processing)
-        self.spinBox_AreaThreshold.valueChanged.connect(self.update_processing)
-        self.spinBox_rbo_Left.valueChanged.connect(self.update_processing)
-        self.spinBox_rbo_Right.valueChanged.connect(self.update_processing)
-        self.spinBox_rbo_Top.valueChanged.connect(self.update_processing)
-        self.spinBox_rbo_Bottom.valueChanged.connect(self.update_processing)
         self.pushButton_Inpainting.clicked.connect(self.inpainting_mode)
         # TODO: add auto inpainting
-        self.spinBox_AutoInpainting.valueChanged.connect(self.update_processing)
+        # self.spinBox_AutoInpainting.valueChanged.connect(self.update_processing)
         self.pushButton_SaveDir_postporcess.clicked.connect(self.select_dir_path)
         self.lineEdit_SaveDir_postporcess.textChanged.connect(self.update_by_lineEdit)
         self.pushButton_SaveThisImage.clicked.connect(self.save_processed_image)
@@ -208,7 +240,7 @@ class MainWindow(QMainWindow, MainWindow_UI):
         elif sender == self.pushButton_DataDir:
             self.dataset_rootpath = dir_path
             self.label_DataDirShow.setText(dir_path)
-            # self.file_list = []
+
             self.file_dict = {}
             self.treeWidget_Files.clear()
             self.load_treeWidget_from_dirpath(dir_path, self.treeWidget_Files)
@@ -276,7 +308,7 @@ class MainWindow(QMainWindow, MainWindow_UI):
                 num = 0
                 for root, dirs, files in os.walk(os.path.join(self.traits_save_dir, 'traits_visualization')):
                     for file in files:
-                        if file.endswith('.png'):
+                        if file.endswith(('.png', '.jpg', '.bmp')):
                             file_path = os.path.join(root, file)
                             image_path = file_path.replace(os.path.join(self.traits_save_dir, 'traits_visualization'),
                                                            self.dataset_rootpath)
@@ -305,7 +337,7 @@ class MainWindow(QMainWindow, MainWindow_UI):
             num = 0
             for root, dirs, files in os.walk(dir_path):
                 for file in files:
-                    if file.endswith('.png'):
+                    if file.endswith(('.png', '.jpg', '.bmp')):
                         file_path = os.path.join(root, file)
                         image_path = file_path.replace(dir_path, self.dataset_rootpath)
                         if image_path in self.file_dict.keys():
@@ -344,8 +376,19 @@ class MainWindow(QMainWindow, MainWindow_UI):
                 QMessageBox.warning(self, 'Warning', 'Please segment first!')
                 return
             if self.current_image['processed'] is None:
-                self.current_image['processed'] = self.current_image['binary'] if self.current_image['binary'] else \
-                    self.current_image['thresholdseg']
+                # self.current_image['processed'] = self.current_image['binary'] if self.current_image['binary'] else \
+                #     self.current_image['thresholdseg']
+                # 确保 'binary' 和 'thresholdseg' 都已经初始化
+                if 'binary' not in self.current_image or 'thresholdseg' not in self.current_image:
+                    raise ValueError("The keys 'binary' and 'thresholdseg' must be initialized in current_image dict.")
+
+                # 使用更加明确的条件来判断使用哪个值
+                if self.current_image['binary'] is not None and not np.all(self.current_image['binary'] == 0):
+                    # 如果 'binary' 存在且非全零，则使用 'binary'
+                    self.current_image['processed'] = self.current_image['binary'].copy()
+                else:
+                    # 否则使用 'thresholdseg'
+                    self.current_image['processed'] = self.current_image['thresholdseg'].copy()
                 self.update_graphicsview(self.current_image['processed'], self.graphicsView_Main3)
             self.splitter_Right.setSizes([1, 0])
             self.graphicsView_Main3.setDrawMode(True)
@@ -402,7 +445,11 @@ class MainWindow(QMainWindow, MainWindow_UI):
             self.update_graphicsview(img, self.graphicsView_Main2, fitInView=False)
             self.current_image['binary'] = img
         if self.pushButton_Inpainting.text() == 'Quit Inpainting':
-            self.update_graphicsview(img, self.graphicsView_Main3, fitInView=False)
+            # FIXME:图像正常校正了，但是没有同步显示
+            try:
+                self.update_graphicsview(img, self.graphicsView_Main3, fitInView=False)
+            except Exception as e:
+                print(e)
             self.current_image['processed'] = img
         if not os.path.exists(os.path.dirname(save_path)):
             os.makedirs(os.path.dirname(save_path))
@@ -448,17 +495,17 @@ class MainWindow(QMainWindow, MainWindow_UI):
         return output
 
     def update_current_image(self):
-        if hasattr(self, 'myChartView_loss'):
-            self.horizontalLayout_imageview.removeWidget(self.chartview_loss)
-            self.horizontalLayout_imageview.removeWidget(self.chartview_acc)
-            self.horizontalLayout_imageview.removeWidget(self.chartview_iou)
-            self.chartview_loss.deleteLater()
-            self.chartview_acc.deleteLater()
-            self.chartview_iou.deleteLater()
-            self.graphicsView_Main.setVisible(True)
-            # self.horizontalLayout_imageview.setStretch(0, 0)
-            # self.horizontalLayout_imageview.setStretch(1, 0)
-            # self.horizontalLayout_imageview.setStretch(2, 0)
+        # if hasattr(self, 'myChartView_loss'):
+        # self.horizontalLayout_imageview.removeWidget(self.myChartView_loss)
+        # self.horizontalLayout_imageview.removeWidget(self.myChartView_iou)
+        # self.horizontalLayout_imageview.removeWidget(self.myChartView_iou)
+        # self.myChartView_loss.deleteLater()
+        # self.myChartView_acc.deleteLater()
+        # self.myChartView_iou.deleteLater()
+        # self.graphicsView_Main.setVisible(True)
+        # self.horizontalLayout_imageview.setStretch(0, 0)
+        # self.horizontalLayout_imageview.setStretch(1, 0)
+        # self.horizontalLayout_imageview.setStretch(2, 0)
         sender = self.sender()
         current_image = self.current_image['image_path']
         if current_image is None and sender != self.treeWidget_Files:
@@ -480,6 +527,7 @@ class MainWindow(QMainWindow, MainWindow_UI):
         elif sender == self.treeWidget_Files:
             if self.treeWidget_Files.currentItem().childCount() == 0:
                 current_image = self.treeWidget_Files.currentItem().text(1)
+
         if current_image:
             self.current_image = {'image_path': None, 'img': None, 'gray': None, 'binary': None, 'thresholdseg': None,
                                   'processed': None, 'traits': None, 'visualization': None}
@@ -505,48 +553,69 @@ class MainWindow(QMainWindow, MainWindow_UI):
         if graphicsView:
             graphicsView.setVisible(True)
             images = [image_path]
+        # 分析可视化图像存在且当前页面位于分析页面
+        elif self.file_dict[image_path][
+            'visualization'] and self.tabWidget_Processing.currentWidget() == self.tab_Analysis:
+            images = [image_path, self.file_dict[image_path]['binary_path'],
+                      self.file_dict[image_path]['visualization']]
         else:
             images = [image_path, self.file_dict[image_path]['binary_path'],
                       self.file_dict[image_path]['processed_path']]
-            graphicsViews = [self.graphicsView_Main, self.graphicsView_Main2, self.graphicsView_Main3]
-            for i, image in enumerate(images):
-                if image is not None:
-                    graphicsViews[i].clean_items()
-                    graphicsViews[i].setVisible(True)
-                else:
-                    graphicsViews[i].setVisible(False)
+
+        graphicsViews = [self.graphicsView_Main, self.graphicsView_Main2, self.graphicsView_Main3]
+        for i, image in enumerate(images):
+            if image is not None:
+                graphicsViews[i].clean_items()
+                graphicsViews[i].setVisible(True)
+            else:
+                graphicsViews[i].setVisible(False)
+
         for i, image in enumerate(images):
             if i == 0:
                 graphicsView = self.graphicsView_Main if not graphicsView else graphicsView
             elif i == 2:
                 graphicsView = self.graphicsView_Main3
-                if self.current_image['visualization'] is not None:
-                    image = self.current_image['visualization']
             else:
                 graphicsView = self.graphicsView_Main2
+
             if image is not None:
+                qimage = None
                 if isinstance(image, str):
-                    image = QImage(image)
+                    qimage = QImage(image)
                 elif isinstance(image, np.ndarray):
-                    if len(image.shape) == 3:
-                        image = QImage(image.data, image.shape[1], image.shape[0], QImage.Format_RGB888)
-                    else:
-                        image = QImage(image.data, image.shape[1], image.shape[0], QImage.Format_Grayscale8)
+                    # 确保 numpy 数组的数据安全
+                    if len(image.shape) == 3:  # RGB 图像
+                        # 使用 copy() 方法确保数据独立
+                        qimage = QImage(image, image.shape[1], image.shape[0], QImage.Format_RGB888)
+                    elif len(image.shape) == 2:
+                        if image.dtype != np.uint8:
+                            image = image.astype(np.uint8)
+                        h, w = image.shape
+                        bytes_per_line = ((w + 3) // 4) * 4
+                        if bytes_per_line == w:
+                            data = image.tobytes()
+                        else:
+                            data = bytearray()
+                            for row in image:
+                                data.extend(row.tobytes())
+                                data.extend(b'\x00' * (bytes_per_line - w))
+                        qimage = QImage(data, w, h, bytes_per_line, QImage.Format_Grayscale8)
                 else:
                     raise TypeError('image type not supported')
-                # if not graphicsView.isVisible():
-                #     graphicsView.setVisible(True)
-                # graph_scene = QGraphicsScene()
-                # image = image.scaled(graphicsView.width() - 3, graphicsView.height() - 3, Qt.KeepAspectRatio)
-                # graph_scene.addPixmap(image)
-                # graph_scene.update()
-                # graphicsView.setScene(graph_scene)
-                graphicsView.setPixmap(image, fitInView=fitInView)
-                if graphicsView == self.graphicsView_Main:
-                    self.label_ImageSize.setText(f'image size: {image.width()}x{image.height()}')
-            # else:
-            #     if graphicsView.isVisible():
-            #         graphicsView.setVisible(False)
+
+                if qimage and not qimage.isNull():
+                    p_size = qimage.size()
+                    p_format = qimage.format()
+                    p_isNull = qimage.isNull()
+
+                    # 将 QImage 转换为 QPixmap 并传递给 setPixmap
+                    pixmap = QPixmap.fromImage(qimage)
+                    graphicsView.setPixmap(pixmap, fitInView=fitInView)
+
+                    if graphicsView == self.graphicsView_Main:
+                        self.label_ImageSize.setText(f'image size: {qimage.width()}x{qimage.height()}')
+                else:
+                    print("Error: Invalid QImage created.")
 
     def dataset_split_balance(self):
         if self.doubleSpinBox_DatasetSplit_train.value() + self.doubleSpinBox_DatasetSplit_val.value() == 1:
@@ -705,105 +774,218 @@ class MainWindow(QMainWindow, MainWindow_UI):
         self.trWItem_lmchild_A_L.setText(1, str(traits['layer_mass_A_L']))
         self.trWItem_lmchild_L_C.setText(1, str(traits['layer_mass_L_C']))
 
-    def update_processing(self):
-        self.treeWidget_ProcessingConfig.repaint()
-        sender = self.sender()
-        if sender == self.spinBox_AreaThreshold:
-            self.spinBox_rbo_Left.setEnabled(False)
-            self.spinBox_rbo_Top.setEnabled(False)
-            self.spinBox_rbo_Right.setEnabled(False)
-            self.spinBox_rbo_Bottom.setEnabled(False)
-            self.spinBox_Dilation.setEnabled(False)
-            self.trWItem_rso.child(1).setText(1, str(self.spinBox_AreaThreshold.value()))
-            return
-        elif sender == self.spinBox_Dilation:
-            self.spinBox_rbo_Left.setEnabled(False)
-            self.spinBox_rbo_Top.setEnabled(False)
-            self.spinBox_rbo_Right.setEnabled(False)
-            self.spinBox_rbo_Bottom.setEnabled(False)
-            self.spinBox_AreaThreshold.setEnabled(False)
-            self.trWItem_rso.child(0).setText(1, str(self.spinBox_Dilation.value()))
-            return
-        elif sender == self.spinBox_rbo_Left:
-            self.spinBox_Dilation.setEnabled(False)
-            self.spinBox_rbo_Top.setEnabled(False)
-            self.spinBox_rbo_Right.setEnabled(False)
-            self.spinBox_rbo_Bottom.setEnabled(False)
-            self.spinBox_AreaThreshold.setEnabled(False)
-            self.trWItem_rbo.child(0).setText(1, str(self.spinBox_rbo_Left.value()))
-            return
-        elif sender == self.spinBox_rbo_Top:
-            self.spinBox_rbo_Left.setEnabled(False)
-            self.spinBox_Dilation.setEnabled(False)
-            self.spinBox_rbo_Right.setEnabled(False)
-            self.spinBox_rbo_Bottom.setEnabled(False)
-            self.spinBox_AreaThreshold.setEnabled(False)
-            self.trWItem_rbo.child(1).setText(1, str(self.spinBox_rbo_Top.value()))
-            return
-        elif sender == self.spinBox_rbo_Right:
-            self.spinBox_rbo_Left.setEnabled(False)
-            self.spinBox_rbo_Top.setEnabled(False)
-            self.spinBox_Dilation.setEnabled(False)
-            self.spinBox_rbo_Bottom.setEnabled(False)
-            self.spinBox_AreaThreshold.setEnabled(False)
-            self.trWItem_rbo.child(2).setText(1, str(self.spinBox_rbo_Right.value()))
-            return
-        elif sender == self.spinBox_rbo_Bottom:
-            self.spinBox_rbo_Left.setEnabled(False)
-            self.spinBox_rbo_Top.setEnabled(False)
-            self.spinBox_Dilation.setEnabled(False)
-            self.spinBox_rbo_Right.setEnabled(False)
-            self.spinBox_AreaThreshold.setEnabled(False)
+    def numpy_to_qimage_gray(img: np.ndarray) -> QImage:
+        if img.dtype != np.uint8 or len(img.shape) != 2:
+            raise ValueError("Input must be 2D uint8 array")
+
+        h, w = img.shape
+        # 计算对齐后的每行字节数
+        bytes_per_line = ((w + 3) // 4) * 4  # 等价于 (w + 3) & ~3
+
+        # 创建对齐后的缓冲区
+        if w == bytes_per_line:
+            data = img.tobytes()
+        else:
+            # 每行末尾补零到对齐
+            data = bytearray()
+            for y in range(h):
+                row = img[y].tobytes()
+                data.extend(row)
+                data.extend(b'\x00' * (bytes_per_line - w))
+
+        return QImage(data, w, h, bytes_per_line, QImage.Format_Grayscale8)
+
+    def on_processing_param_changed(self):
+        """任一后处理参数变化时触发，启动防抖定时器"""
+        self.processing_timer.start(300)  # 延迟 300ms 执行
+
+    def _do_update_processing(self):
+        """执行实际的图像后处理并更新预览（防抖后调用）"""
+        # --- 获取参数 ---
         dilate_times = self.spinBox_Dilation.value()
         areathreshold = self.spinBox_AreaThreshold.value()
         left = self.spinBox_rbo_Left.value()
         right = self.spinBox_rbo_Right.value()
         top = self.spinBox_rbo_Top.value()
         bottom = self.spinBox_rbo_Bottom.value()
+
+        # --- 获取图像数据 ---
+        if not self.current_image.get('image_path'):
+            return
+
         try:
             binary_path = self.file_dict[self.current_image['image_path']]['binary_path']
-            img = self.current_image['thresholdseg'].copy() if binary_path is None else binary_path
-        except:
-            img = None
-        if isinstance(img, str):
-            img = np.array(Image.open(img), np.uint8)
-        elif img is None:
-            self.spinBox_Dilation.setEnabled(True)
-            self.spinBox_AreaThreshold.setEnabled(True)
-            self.spinBox_rbo_Left.setEnabled(True)
-            self.spinBox_rbo_Top.setEnabled(True)
-            self.spinBox_rbo_Right.setEnabled(True)
-            self.spinBox_rbo_Bottom.setEnabled(True)
-            return
-        if self.trWItem_rso.checkState(1) == Qt.Checked:
-            dilate = cv2.dilate(img, np.ones((3, 3), np.uint8), iterations=dilate_times)
-            num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(dilate, connectivity=8)
-            a_array = stats[:, 4].reshape(-1)
-            if areathreshold == -1:
-                area_m = np.mean(np.sort(a_array)[:-1]) * 0.5
+            if binary_path is None:
+                img = self.current_image.get('thresholdseg')
             else:
-                area_m = areathreshold
-            for index, a in enumerate(a_array):
-                if a < area_m:
-                    img[labels == index] = 0
+                img = np.array(Image.open(binary_path), dtype=np.uint8)
+        except Exception:
+            return
+
+        if img is None or img.size == 0:
+            return
+
+        # --- 获取原始尺寸并生成预览图 ---
+        h_orig, w_orig = img.shape[:2]
+        MAX_PREVIEW_SIZE = 4096
+        if max(h_orig, w_orig) > MAX_PREVIEW_SIZE:
+            scale = MAX_PREVIEW_SIZE / max(h_orig, w_orig)
+            preview_img = cv2.resize(img, (int(w_orig * scale), int(h_orig * scale)), interpolation=cv2.INTER_NEAREST)
+        else:
+            scale = 5.0
+            preview_img = img.copy()
+
+        processed = preview_img.copy()
+
+        # --- RSO (面积筛选) ---
+        if self.trWItem_rso.checkState(1) == Qt.Checked:
+            kernel = np.ones((3, 3), np.uint8)
+            dilated = cv2.dilate(processed, kernel, iterations=dilate_times)
+            num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(dilated, connectivity=8)
+            areas = stats[:, 4]
+            if len(areas) > 1:
+                if areathreshold == -1:
+                    area_m = np.mean(np.sort(areas)[1:]) * 0.5
+                else:
+                    area_m = areathreshold * (scale ** 2)  # 缩放面积阈值
+                for i in range(1, num_labels):
+                    if areas[i] < area_m:
+                        processed[labels == i] = 0
+
+        # --- RBO (边界剔除) ---
         if self.trWItem_rbo.checkState(1) == Qt.Checked:
-            num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(img, connectivity=8)
-            h, w = img.shape
-            for i, [x, y] in enumerate(centroids):
-                if x < left or x > w - right or y < top or y > h - bottom:
-                    img[labels == i] = 0
-        img_inpainting = self.autoinpainting(img.copy())
-        img_inpainting_show = cv2.merge([img_inpainting, img, img])
-        self.current_image['processed'] = img_inpainting
+            left_p = int(left * scale)
+            right_p = int(right * scale)
+            top_p = int(top * scale)
+            bottom_p = int(bottom * scale)
+
+            num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(processed, connectivity=8)
+            h_p, w_p = processed.shape
+            for i in range(1, num_labels):
+                x, y = centroids[i]
+                if x < left_p or x > w_p - right_p or y < top_p or y > h_p - bottom_p:
+                    processed[labels == i] = 0
+
+        # --- 更新预览 ---
+        qimg = QImage(
+            processed.data,
+            processed.shape[1],
+            processed.shape[0],
+            processed.shape[1],
+            QImage.Format_Grayscale8
+        )
+        pixmap = QPixmap.fromImage(qimg)
+        self.graphicsView_Main3.setPixmap(pixmap, fitInView=True)
         self.graphicsView_Main3.setVisible(True)
-        qimg = QImage(img_inpainting_show.data, img.shape[1], img.shape[0], QImage.Format_RGB888)
-        self.graphicsView_Main3.setPixmap(qimg)
-        self.spinBox_Dilation.setEnabled(True)
-        self.spinBox_AreaThreshold.setEnabled(True)
-        self.spinBox_rbo_Left.setEnabled(True)
-        self.spinBox_rbo_Top.setEnabled(True)
-        self.spinBox_rbo_Right.setEnabled(True)
-        self.spinBox_rbo_Bottom.setEnabled(True)
+
+        # --- 同步 TreeWidget 显示 ---
+        self.trWItem_rso.child(0).setText(1, str(dilate_times))
+        self.trWItem_rso.child(1).setText(1, str(areathreshold))
+        self.trWItem_rbo.child(0).setText(1, str(left))
+        self.trWItem_rbo.child(1).setText(1, str(top))
+        self.trWItem_rbo.child(2).setText(1, str(right))
+        if self.trWItem_rbo.childCount() > 3:
+            self.trWItem_rbo.child(3).setText(1, str(bottom))
+
+    # def update_processing(self):
+    #     self.treeWidget_ProcessingConfig.repaint()
+    #     sender = self.sender()
+    #     if sender == self.spinBox_AreaThreshold:
+    #         self.spinBox_rbo_Left.setEnabled(False)
+    #         self.spinBox_rbo_Top.setEnabled(False)
+    #         self.spinBox_rbo_Right.setEnabled(False)
+    #         self.spinBox_rbo_Bottom.setEnabled(False)
+    #         self.spinBox_Dilation.setEnabled(False)
+    #         self.trWItem_rso.child(1).setText(1, str(self.spinBox_AreaThreshold.value()))
+    #         return
+    #     elif sender == self.spinBox_Dilation:
+    #         self.spinBox_rbo_Left.setEnabled(False)
+    #         self.spinBox_rbo_Top.setEnabled(False)
+    #         self.spinBox_rbo_Right.setEnabled(False)
+    #         self.spinBox_rbo_Bottom.setEnabled(False)
+    #         self.spinBox_AreaThreshold.setEnabled(False)
+    #         self.trWItem_rso.child(0).setText(1, str(self.spinBox_Dilation.value()))
+    #         return
+    #     elif sender == self.spinBox_rbo_Left:
+    #         self.spinBox_Dilation.setEnabled(False)
+    #         self.spinBox_rbo_Top.setEnabled(False)
+    #         self.spinBox_rbo_Right.setEnabled(False)
+    #         self.spinBox_rbo_Bottom.setEnabled(False)
+    #         self.spinBox_AreaThreshold.setEnabled(False)
+    #         self.trWItem_rbo.child(0).setText(1, str(self.spinBox_rbo_Left.value()))
+    #         return
+    #     elif sender == self.spinBox_rbo_Top:
+    #         self.spinBox_rbo_Left.setEnabled(False)
+    #         self.spinBox_Dilation.setEnabled(False)
+    #         self.spinBox_rbo_Right.setEnabled(False)
+    #         self.spinBox_rbo_Bottom.setEnabled(False)
+    #         self.spinBox_AreaThreshold.setEnabled(False)
+    #         self.trWItem_rbo.child(1).setText(1, str(self.spinBox_rbo_Top.value()))
+    #         return
+    #     elif sender == self.spinBox_rbo_Right:
+    #         self.spinBox_rbo_Left.setEnabled(False)
+    #         self.spinBox_rbo_Top.setEnabled(False)
+    #         self.spinBox_Dilation.setEnabled(False)
+    #         self.spinBox_rbo_Bottom.setEnabled(False)
+    #         self.spinBox_AreaThreshold.setEnabled(False)
+    #         self.trWItem_rbo.child(2).setText(1, str(self.spinBox_rbo_Right.value()))
+    #         return
+    #     elif sender == self.spinBox_rbo_Bottom:
+    #         self.spinBox_rbo_Left.setEnabled(False)
+    #         self.spinBox_rbo_Top.setEnabled(False)
+    #         self.spinBox_Dilation.setEnabled(False)
+    #         self.spinBox_rbo_Right.setEnabled(False)
+    #         self.spinBox_AreaThreshold.setEnabled(False)
+    #     dilate_times = self.spinBox_Dilation.value()
+    #     areathreshold = self.spinBox_AreaThreshold.value()
+    #     left = self.spinBox_rbo_Left.value()
+    #     right = self.spinBox_rbo_Right.value()
+    #     top = self.spinBox_rbo_Top.value()
+    #     bottom = self.spinBox_rbo_Bottom.value()
+    #     try:
+    #         binary_path = self.file_dict[self.current_image['image_path']]['binary_path']
+    #         img = self.current_image['thresholdseg'].copy() if binary_path is None else binary_path
+    #     except:
+    #         img = None
+    #     if isinstance(img, str):
+    #         img = np.array(Image.open(img), np.uint8)
+    #     elif img is None:
+    #         self.spinBox_Dilation.setEnabled(True)
+    #         self.spinBox_AreaThreshold.setEnabled(True)
+    #         self.spinBox_rbo_Left.setEnabled(True)
+    #         self.spinBox_rbo_Top.setEnabled(True)
+    #         self.spinBox_rbo_Right.setEnabled(True)
+    #         self.spinBox_rbo_Bottom.setEnabled(True)
+    #         return
+    #     if self.trWItem_rso.checkState(1) == Qt.Checked:
+    #         dilate = cv2.dilate(img, np.ones((3, 3), np.uint8), iterations=dilate_times)
+    #         num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(dilate, connectivity=8)
+    #         a_array = stats[:, 4].reshape(-1)
+    #         if areathreshold == -1:
+    #             area_m = np.mean(np.sort(a_array)[:-1]) * 0.5
+    #         else:
+    #             area_m = areathreshold
+    #         for index, a in enumerate(a_array):
+    #             if a < area_m:
+    #                 img[labels == index] = 0
+    #     if self.trWItem_rbo.checkState(1) == Qt.Checked:
+    #         num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(img, connectivity=8)
+    #         h, w = img.shape
+    #         for i, [x, y] in enumerate(centroids):
+    #             if x < left or x > w - right or y < top or y > h - bottom:
+    #                 img[labels == i] = 0
+    #     # img_inpainting = self.autoinpainting(img.copy())
+    #     # img_inpainting_show = cv2.merge([img_inpainting, img, img])
+    #     # self.current_image['processed'] = img_inpainting
+    #     self.graphicsView_Main3.setVisible(True)
+    #     # qimg = QImage(img_inpainting_show.data, img.shape[1], img.shape[0], QImage.Format_RGB888)
+    #     # self.graphicsView_Main3.setPixmap(qimg)
+    #     self.spinBox_Dilation.setEnabled(True)
+    #     self.spinBox_AreaThreshold.setEnabled(True)
+    #     self.spinBox_rbo_Left.setEnabled(True)
+    #     self.spinBox_rbo_Top.setEnabled(True)
+    #     self.spinBox_rbo_Right.setEnabled(True)
+    #     self.spinBox_rbo_Bottom.setEnabled(True)
 
     def save_processed_image(self):
         if self.current_image['processed'] is not None:
@@ -883,42 +1065,104 @@ class MainWindow(QMainWindow, MainWindow_UI):
             self.tab_Train.setEnabled(value)
             self.tab_PostProcessing.setEnabled(value)
 
-    def show_chart(self, data, type):
-        if type == 'init':
+    def show_chart(self, data, chart_type):
+        if chart_type == 'init':
+            # 隐藏图像视图
             self.graphicsView_Main.setVisible(False)
             self.graphicsView_Main2.setVisible(False)
             self.graphicsView_Main3.setVisible(False)
-            if hasattr(self, 'myChartView_loss'):
-                self.myChartView_loss.clearchart()
-            else:
+
+            # 初始化 Loss 图表视图
+            if not hasattr(self, 'myChartView_loss'):
                 self.myChartView_loss = myChartView()
                 self.myChartView_loss.chart().setTitle('Loss')
                 self.horizontalLayout_imageview.addWidget(self.myChartView_loss)
-            if hasattr(self, 'myChartView_acc'):
-                self.myChartView_acc.clearchart()
             else:
+                self.myChartView_loss.show()
+            self.myChartView_loss.clearchart()
+
+            # 初始化 mAcc 图表视图
+            if not hasattr(self, 'myChartView_acc'):
                 self.myChartView_acc = myChartView()
                 self.myChartView_acc.chart().setTitle('mAcc')
                 self.horizontalLayout_imageview.addWidget(self.myChartView_acc)
-            if hasattr(self, 'myChartView_iou'):
-                self.myChartView_iou.clearchart()
             else:
+                self.myChartView_acc.show()
+            self.myChartView_acc.clearchart()
+
+            # 初始化 mIoU 图表视图
+            if not hasattr(self, 'myChartView_iou'):
                 self.myChartView_iou = myChartView()
                 self.myChartView_iou.chart().setTitle('mIoU')
                 self.horizontalLayout_imageview.addWidget(self.myChartView_iou)
-            self.horizontalLayout_imageview.setStretch(3, 1)
-            self.horizontalLayout_imageview.setStretch(4, 1)
-            self.horizontalLayout_imageview.setStretch(5, 1)
+            else:
+                self.myChartView_iou.show()
+            self.myChartView_iou.clearchart()
+
+            # 设置 stretch 因子以适应布局
+            for chart in [self.myChartView_loss, self.myChartView_acc, self.myChartView_iou]:
+                self.horizontalLayout_imageview.setStretchFactor(chart, 1)
+
             self.label_CurrentImage.setText('Training')
             self.label_ImageSize.setText('')
-        elif type == 'loss':
-            self.myChartView_loss.append(data[0], data[1])
-        elif type == 'acc':
-            self.myChartView_acc.append(data[0], data[1])
-        elif type == 'iou':
-            self.myChartView_iou.append(data[0], data[1])
-        elif type == 'delete':
+        elif chart_type == 'loss':
+            if hasattr(self, 'myChartView_loss'):
+                self.myChartView_loss.append(data[0], data[1])
+        elif chart_type == 'acc':
+            if hasattr(self, 'myChartView_acc'):
+                self.myChartView_acc.append(data[0], data[1])
+        elif chart_type == 'iou':
+            if hasattr(self, 'myChartView_iou'):
+                self.myChartView_iou.append(data[0], data[1])
+        elif chart_type == 'delete':
+            # 隐藏所有图表视图
+            for chart_view in ['myChartView_loss', 'myChartView_acc', 'myChartView_iou']:
+                chart = getattr(self, chart_view, None)
+                if chart:
+                    chart.hide()
+
+            # 显示主图像视图
+            self.graphicsView_Main.setVisible(True)
+            self.graphicsView_Main2.setVisible(True)
+            self.graphicsView_Main3.setVisible(True)
+            self.horizontalLayout_imageview.setStretchFactor(self.graphicsView_Main, 1)
+            self.horizontalLayout_imageview.setStretchFactor(self.graphicsView_Main2, 1)
+            self.horizontalLayout_imageview.setStretchFactor(self.graphicsView_Main3, 1)
+
+            # 更新当前图像
             self.update_current_image()
+
+        #     if hasattr(self, 'myChartView_loss'):
+        #         self.myChartView_loss.clearchart()
+        #     else:
+        #         self.myChartView_loss = myChartView()
+        #         self.myChartView_loss.chart().setTitle('Loss')
+        #         self.horizontalLayout_imageview.addWidget(self.myChartView_loss)
+        #     if hasattr(self, 'myChartView_acc'):
+        #         self.myChartView_acc.clearchart()
+        #     else:
+        #         self.myChartView_acc = myChartView()
+        #         self.myChartView_acc.chart().setTitle('mAcc')
+        #         self.horizontalLayout_imageview.addWidget(self.myChartView_acc)
+        #     if hasattr(self, 'myChartView_iou'):
+        #         self.myChartView_iou.clearchart()
+        #     else:
+        #         self.myChartView_iou = myChartView()
+        #         self.myChartView_iou.chart().setTitle('mIoU')
+        #         self.horizontalLayout_imageview.addWidget(self.myChartView_iou)
+        #     self.horizontalLayout_imageview.setStretch(3, 1)
+        #     self.horizontalLayout_imageview.setStretch(4, 1)
+        #     self.horizontalLayout_imageview.setStretch(5, 1)
+        #     self.label_CurrentImage.setText('Training')
+        #     self.label_ImageSize.setText('')
+        # elif type == 'loss':
+        #     self.myChartView_loss.append(data[0], data[1])
+        # elif type == 'acc':
+        #     self.myChartView_acc.append(data[0], data[1])
+        # elif type == 'iou':
+        #     self.myChartView_iou.append(data[0], data[1])
+        # elif type == 'delete':
+        #     self.update_current_image()
 
     def start_train(self):
         if self.place != 'gpu':
@@ -982,6 +1226,7 @@ class MainWindow(QMainWindow, MainWindow_UI):
             if str(value) == '' or value == 0:
                 QMessageBox.warning(self, 'Warning', 'Please fill in {}!'.format(key))
                 return
+        args['gpu_id'] = self.spinBox_GPU_id.value()
         self.label_statubar.setText('Predicting...')
         self.setabled('Predict', False)
         self.graphicsView_Main2.setVisible(True)
@@ -1118,7 +1363,7 @@ class MainWindow(QMainWindow, MainWindow_UI):
         self.pushButton_StopCalculate.clicked.connect(self.calculate_thread.stop)
         self.calculate_thread.signal[str].connect(self.update_textBrowser)
         self.calculate_thread.signal[dict].connect(self.calculate_one_image)
-        self.calculate_thread.signal[str, str, str, np.ndarray].connect(self.finish_one_image)
+        self.calculate_thread.signal[str, str, str].connect(self.finish_one_image)
         self.calculate_thread.finished.connect(self.thread_finished)
         self.calculate_thread.args = args
         self.calculate_thread.num = num
@@ -1165,7 +1410,7 @@ class MainWindow(QMainWindow, MainWindow_UI):
         elif type == 'processed_path':
             self.file_dict[image_path]['traits'] = None
         self.current_image['image_path'] = image_path
-        self.current_image['visualization'] = img
+        # self.current_image['visualization'] = img
         self.label_CurrentImage.setText(image_path)
         self.update_graphicsview(image_path)
 
@@ -1181,6 +1426,7 @@ class MainWindow(QMainWindow, MainWindow_UI):
         if self.label_statubar.text() in ['Done', 'Ready']:
             return
         self.label_statubar.setText('Stop')
+        self.show_chart(None, 'delete')
 
     def thread_finished(self):
         sender = self.sender()  # type TrainThread or PredictThread
@@ -1195,31 +1441,41 @@ class MainWindow(QMainWindow, MainWindow_UI):
         self.update_textBrowser(sender.task + ' ' + self.label_statubar.text())
 
 
+def main():
+    try:
+        # sys.stdout重定向，指向文件对象
+        local_time = time.strftime("%Y-%m-%d %H-%M-%S", time.localtime())
+        log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'log', local_time + '.txt')
+        if not os.path.exists(os.path.dirname(log_path)):
+            os.makedirs(os.path.dirname(log_path))
+        logfile = open(log_path, 'w')
+        sys.stdout = logfile
+        sys.stderr = logfile
+
+        app = QApplication(sys.argv)
+        app.setStyleSheet(qdarkstyle.load_stylesheet(qt_api='pyqt5'))
+
+        font = QFont("Arial", 12)
+        app.setFont(font)
+
+        mainwindow = MainWindow()  # 假设 MainWindow 已定义
+        Logo = QPixmap()
+        try:
+            Logo.loadFromData(base64.b64decode(icon_png))  # 假设 icon_png 是有效的 base64 字符串
+            icon_img = QIcon()
+            icon_img.addPixmap(Logo, QIcon.Normal, QIcon.Off)
+            mainwindow.setWindowIcon(icon_img)
+        except Exception as e:
+            print(f"Failed to load icon: {e}")
+
+        # mainwindow.setWindowIcon(QIcon("gf.ico"))
+        mainwindow.show()
+        return app.exec_()
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        sys.exit(1)
+
+
 if __name__ == '__main__':
-    import qdarkstyle
-    import sys
-    from PyQt5.QtWidgets import QApplication
-
-    # sys.stdout重定向，指向文件对象
-    locol_time = time.strftime("%Y-%m-%d %H-%M-%S", time.localtime())
-    log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'log', locol_time + '.txt')
-    if not os.path.exists(os.path.dirname(log_path)):
-        os.makedirs(os.path.dirname(log_path))
-    logfile = open(log_path, 'w')
-    sys.stdout = logfile
-    sys.stderr = logfile
-
-    app = QApplication(sys.argv)
-    app.setStyleSheet(qdarkstyle.load_stylesheet(qt_api='pyqt5'))
-
-    font = QFont("Arial", 12)
-    app.setFont(font)
-
-    mainwindow = MainWindow()
-    Logo = QPixmap()
-    Logo.loadFromData(base64.b64decode(icon_png))
-    icon_img = QIcon()
-    icon_img.addPixmap(Logo, QIcon.Normal, QIcon.Off)
-    mainwindow.setWindowIcon(icon_img)
-    mainwindow.show()
-    sys.exit(app.exec_())
+    result = main()
+    sys.exit(result)

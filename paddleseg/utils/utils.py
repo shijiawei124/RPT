@@ -103,13 +103,23 @@ def resume(model, optimizer, resume_model):
         logger.info('Resume model from {}'.format(resume_model))
         if os.path.exists(resume_model):
             resume_model = os.path.normpath(resume_model)
+            # 加载模型参数
             ckpt_path = os.path.join(resume_model, 'model.pdparams')
             para_state_dict = paddle.load(ckpt_path)
-            ckpt_path = os.path.join(resume_model, 'model.pdopt')
-            opti_state_dict = paddle.load(ckpt_path)
-            model.set_state_dict(para_state_dict)
-            optimizer.set_state_dict(opti_state_dict)
+            model.set_dict(para_state_dict)
+            logger.info(f"Successfully loaded model parameters from {ckpt_path}")
 
+            # 加载优化器参数
+            ckpt_path = os.path.join(resume_model, 'model.pdopt')
+            if os.path.exists(ckpt_path):
+                opti_state_dict = paddle.load(ckpt_path)
+                optimizer.set_state_dict(opti_state_dict)
+                logger.info(f"Successfully loaded optimizer state from {ckpt_path}")
+            else:
+                logger.warning(f"Optimizer state file not found: {ckpt_path}. "
+                               f"Training will continue with a fresh optimizer state.")
+
+            # 提取迭代次数
             iter = resume_model.split('_')[-1]
             iter = int(iter)
             return iter

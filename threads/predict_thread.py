@@ -5,8 +5,11 @@ import numpy as np
 import paddle
 import copy
 from PyQt5 import QtCore
+import cv2
+from mpmath.identification import transforms
 
 import paddleseg
+from paddleseg import transforms as T
 from paddleseg import utils
 from paddleseg.core import infer
 from paddleseg.utils import logger, progbar, get_image_list
@@ -30,9 +33,71 @@ class PredictThread(QtCore.QThread):
         self.signal[bool].emit(False)
         self.isOn = True
         try:
-            self.predict(**self.args)
+            device = 'cpu'
+
+            if 'gpu_id' in self.args:
+                preferred_gpu_id = self.args['gpu_id']
+
+                if preferred_gpu_id >= 0 and paddle.is_compiled_with_cuda():
+                    test_device = f'gpu:{preferred_gpu_id}'
+                    try:
+                        paddle.set_device(test_device)
+                        device = test_device
+                        self.signal[str].emit(f"[INFO] Successfully using {device} for inference.")
+                    except Exception as e1:
+                        # 如果设置失败，则尝试 fallback 到 cpu
+                        self.signal[str].emit(f"[WARNING] Failed to use GPU {preferred_gpu_id}: {e1}. Falling back to CPU.")
+                        device = 'cpu'
+                elif preferred_gpu_id == -1:
+                    self.signal[str].emit("[INFO] Using CPU as specified by gpu_id.")
+                else:
+                    self.signal[str].emit("[INFO] CUDA not supported. Using CPU.")
+            else:
+                self.signal[str].emit("[INFO] No gpu_id provided, defaulting to CPU.")
+
+            # 确保最终设备被设置（即使上面已设，再设一次也无妨）
+            paddle.set_device(device)
+
+            # 去除参数gpu_id
+            predict_args = {k: v for k, v in self.args.items() if k != 'gpu_id'}
+
+            self.predict(**predict_args)
         except Exception as e:
-            self.signal[str].emit(str(e))
+            import traceback
+            self.signal[str].emit(f"[ERROR] {str(e)}\n{traceback.format_exc()}")
+        #     if paddle.is_compiled_with_cuda():
+        #         # 你可以指定想用的 GPU 编号（例如 0, 1）
+        #         preferred_gpu_id = self.args['gpu_id']
+        #
+        #         try:
+        #             # 直接尝试设置目标 GPU
+        #             test_device = f'gpu:{preferred_gpu_id}'
+        #             paddle.set_device(test_device)
+        #             device = test_device
+        #             self.signal[str].emit(f"[INFO] Successfully using {device} for inference.")
+        #         except Exception as e1:
+        #             # 尝试 fallback 到 gpu:0（如果 preferred 不是 0）
+        #             if preferred_gpu_id != 0:
+        #                 try:
+        #                     paddle.set_device('gpu:0')
+        #                     device = 'gpu:0'
+        #                     self.signal[str].emit(f"[INFO] Preferred GPU {preferred_gpu_id} unavailable, using gpu:0.")
+        #                 except Exception as e2:
+        #                     self.signal[str].emit(f"[WARNING] Failed to use any GPU: {e1}, {e2}. Falling back to CPU.")
+        #                     device = 'cpu'
+        #             else:
+        #                 self.signal[str].emit(f"[WARNING] Failed to use GPU: {e1}. Falling back to CPU.")
+        #                 device = 'cpu'
+        #     else:
+        #         self.signal[str].emit("[INFO] CUDA not supported. Using CPU.")
+        #
+        #     # 确保最终设备被设置（即使上面已设，再设一次也无妨）
+        #     paddle.set_device(device)
+        #
+        #     self.predict(**self.args)
+        # except Exception as e:
+        #     import traceback
+        #     self.signal[str].emit(f"[ERROR] {str(e)}\n{traceback.format_exc()}")
 
     def stop(self):
         self.isOn = False
@@ -101,58 +166,54 @@ class PredictThread(QtCore.QThread):
             for i, im_path in enumerate(img_lists[local_rank]):
                 if not self.isOn:
                     return
+
+                # 图像读取
                 # im = cv2.imread(im_path)
                 img = Image.open(im_path).convert('RGB')
                 # img = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
                 img = np.array(img)
                 # im = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
                 ori_shape = img.shape[:2]
+
+                # 预处理
                 im = self.transforms(img)[0]
                 im = im[np.newaxis, ...]
                 im = paddle.to_tensor(im)
                 im = im.transpose([0, 3, 1, 2])
 
+                # 图像推理
                 pred = infer.aug_inference(
                     self.model,
                     im,
                     ori_shape=ori_shape,
                     transforms=[self.transforms],
                     scales=1.0,
-                    flip_horizontal=True,
-                    flip_vertical=True,
+                    flip_horizontal=False,
+                    flip_vertical=False,
                     is_slide=is_slide,
                     stride=[stride] * 2,
-                    crop_size=[crop_size] * 2, isOn=self.isOn)
+                    crop_size=[crop_size] * 2,
+                    isOn=self.isOn)
                 if not self.isOn:
                     return
+
+                # 保存结果
                 pred = paddle.squeeze(pred)
                 pred = pred.numpy().astype('uint8')
-
-                # # get the saved name
-                # if self.image_dir is not None:
-                #     im_file = im_path.replace(self.image_dir, '')
-                # else:
-                #     im_file = os.path.basename(im_path)
-                # if im_file[0] == '/' or im_file[0] == '\\':
-                #     im_file = im_file[1:]
 
                 # 保存黑白图
                 save_pred = pred.copy()
                 save_pred[save_pred == 1] = 255
-                # binary_path = os.path.join(save_dir, os.path.splitext(im_file)[0] + ".png")
+
                 binary_path = im_path.replace(image_rootpath, save_dir)
                 if not os.path.exists(binary_dir := os.path.dirname(binary_path)):
                     os.makedirs(binary_dir)
-                save_imng = Image.fromarray(save_pred)
-                save_imng.save(binary_path)
-                # cv2.imwrite(binary_path, save_pred)
+                save_img = Image.fromarray(save_pred)
+                save_img.save(binary_path, compress_level=0)
+
                 self.signal[str, str, str].emit(im_path, binary_path, 'binary_path')
-                # self.signal[list].emit([img, cv2.cvtColor(save_pred, cv2.COLOR_GRAY2RGB)])
-                # self.signal[np.ndarray, np.ndarray].emit(img, cv2.cvtColor(save_pred, cv2.COLOR_GRAY2RGB))
-                # self.signal[int, int].emit(i + 1, len(img_lists[0]))
                 self.signal[str].emit('[SEG]\t{}/{} image: {} saved'.format(i + 1, len(img_lists[0]), binary_path))
                 progbar_pred.update(i + 1)
-
 
 # if __name__ == '__main__':
 #     args = {

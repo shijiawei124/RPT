@@ -8,6 +8,9 @@ from PyQt5.QtCore import QThread, pyqtSignal
 
 class ProcessThread(QThread):
     # 定义信号
+    # [str, str, str]: src_image_path, predict_binary_image_path, postprocess_binary_image_path
+    # [str]: log message
+
     signal = pyqtSignal([str, str, str], [str])
 
     def __init__(self):
